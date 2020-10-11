@@ -100,7 +100,7 @@ class Game {
                 clearInterval(this.interval);
                 alert("You lost. Your score: " + game.score);
             }
-        }, 50)
+        }, 200)
     }
 }
 
