@@ -1,4 +1,4 @@
-const PIX_WIDTH = 30;
+
 
 
 class Snake {
@@ -126,7 +126,7 @@ class Game {
     run() {
         this.interval = setInterval(()=>{
             this.loop();
-        }, 1000)
+        }, SPEED)
     }
 }
 
@@ -176,6 +176,11 @@ class AI {
 
     }
 
+    // Checks whether or not a snake will be able to survive after following this.path
+    chechPath() {
+
+    }
+
     followPath() {
         this.game.snake.direction = this.path[0];
         this.game.loop();
@@ -194,19 +199,20 @@ class AI {
                 this.followPath();
                 steps -=1;
             }
-        }, 100)
+        }, SPEED)
         setTimeout( ()=>{
             clearInterval(interval);
             this.running = false;
-        }, 100 * this.path.length);
+        }, SPEED * this.path.length);
     }
 }
 
-function run() {
-    let ai = new AI();
+
+function main() {
+    ai = new AI();
     setInterval(() => {
         if (!ai.running) {ai.run()}
-    }, 50);
+    }, SPEED);
 }
 
 function test() {
@@ -232,9 +238,9 @@ function test() {
     ai.game.apple = myApple;
 
     setInterval(() => {
-        if (!ai.running) {ai.game.render()}
-    }, 50);
+        if (!ai.running) {ai.run()}
+    }, SPEED);
 }
-
-run();
-// test();
+const PIX_WIDTH = 30;
+const SPEED = 10; //refresh time, in miliseconds
+main();
