@@ -27,6 +27,11 @@ class Snake {
 
     head(){return this.snake[this.snake.length -1]}
     body(){return this.snake.slice(0, this.snake.length -1)}
+    get length() {
+        let count = 0;
+        this.snake.forEach(()=>{count++;});
+        return count
+    }
 
     isCollision () {
         let biteSelf = false;
@@ -142,7 +147,7 @@ class AI {
         AI.h = this.game.HEIGHT;
     }
     
-    static findPath(snake, apple) {
+    static findBestPath(snake, apple) {
         const a = apple;
         const s = new Snake(AI.w, AI.h, [...snake]);
         const h = s.head()
@@ -161,14 +166,20 @@ class AI {
 
         for (let step of steps) {
             s.direction = step;
-            let h = s.nextHead();
-            if (h[0] == a[0] && h[1] == a[1]) {return [step]}
-            s.move();
+            let h = s.nextHead(); let isEating = false;
+            if (h[0] == a[0] && h[1] == a[1]) {
+                isEating = true;
+                s.move(isEating);
+                return [[step], [...s.snake]]
+            }
+            s.move(isEating);
             if (!s.isCollision()) {
-                let nextPath =  AI.findPath(s.snake, a);
-                if (nextPath) {
-                    nextPath.unshift(step);
-                    return nextPath;
+                let path; let predition;
+                let output = AI.findBestPath(s.snake, a);
+                if (output) {
+                    [path, predition] =  output;
+                    path.unshift(step);
+                    return [path, predition];
                 }
             }
             s.snake = s.lastSnake //cancels last move, because it was pointless/illegal
@@ -177,8 +188,37 @@ class AI {
     }
 
     // Checks whether or not a snake will be able to survive after following this.path
-    chechPath() {
+    static isPathValid(snake, moves) {
+        let s = new Snake(AI.w, AI.h, [...snake]);
+        for (let direction of [37, 38, 39, 40]) {
+            s.direction = direction;
+            const isEaing = false;
+            s.move(isEaing);
+            if (!s.isCollision()) {
+                if (moves == 0) {return true}
+                if (AI.isPathValid(s.snake, moves-1)) {return true}
+            }
+            s.snake = s.lastSnake;
+        }
+        return false;
+    }
 
+    static findAnyPath(snake, moves) {
+        let s = new Snake(AI.w, AI.h, [...snake]);
+        for (let direction of [37, 38, 39, 40]) {
+            s.direction = direction;
+            const isEaing = false;
+            s.move(isEaing);
+            if (!s.isCollision()) {
+                if (moves == 0) {return [direction]}
+                path = AI.findAnyPath(s.snake, moves-1);
+                if (path) {
+                    path.unshift(direction);
+                    return path;
+                }
+            }
+            s.snake = s.lastSnake;
+        }
     }
 
     followPath() {
@@ -189,11 +229,19 @@ class AI {
 
     run() {
         this.running = true;
-        this.path = AI.findPath(this.game.snake.snake, this.game.apple);
-        // if (!this.path) {
-        //     console.assert(false, "A path has not been found");
-        // }
+        let predition;
+        [this.path, predition] = AI.findBestPath(this.game.snake.snake, this.game.apple);
         let steps = this.path.length;
+        console.assert(this.path != undefined)
+
+        if (!AI.isPathValid(predition, this.game.snake.length)) {
+            let alternative = AI.findAnyPath(this.game.snake.snake, this.game.snake.length*2);
+            if (alternative) {
+                this.path = alternative
+                this.steps = Math.min(this.path.length, 10);
+            }
+        }
+
         let interval = setInterval( () => {
             if (steps>0) {
                 this.followPath();
