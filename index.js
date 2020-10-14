@@ -5,12 +5,14 @@ class Snake {
     constructor(width, height, snake=null) {
         this.w = width;
         this.h = height;
-        this.snake = [];
+        this.snake = snake;
         if (!snake) {
+            this.snake = [];
             for (let i=0; i<4; i++) {
                 this.snake.push([this.w/2 -2 + i, this.h/2]);
             }
         }
+        this.lastSnake = [] //this will store state of snake one move before current state
         this.direction = 39 //also possible: 38, 37, 40
         document.onkeydown = (event) => {
             let newKey = event.keyCode
@@ -48,8 +50,9 @@ class Snake {
     }
 
     move(isEating) {
+        this.lastSnake = [...this.snake];
         if (!isEating) {this.snake.shift()}
-        this.snake.push(this.nextHead(this.direction))
+        this.snake.push(this.nextHead());
     }
 }
 
@@ -110,16 +113,121 @@ class Game {
         this.render();
         if (this.snake.isCollision()) {
             clearInterval(this.interval);
-            alert("You lost. Your score: " + game.score);
+            this.scoreElement.innerHTML = "You lost. Score: " + this.score;
         }
     }
 
     run() {
         this.interval = setInterval(()=>{
             this.loop();
-        }, 200)
+        }, 1000)
     }
 }
 
-let game = new Game();
-game.run();
+
+class AI {
+    static w; static h;
+
+    constructor() {
+        this.game = new Game();
+        this.path = null;
+        this.running = false;
+        AI.w = this.game.WIDTH;
+        AI.h = this.game.HEIGHT;
+    }
+    
+    static findPath(snake, apple) {
+        const a = apple;
+        const s = new Snake(AI.w, AI.h, [...snake]);
+        const h = s.head()
+        const v = [a[0] - h[0], a[1] - h[1]]; //this is a vector
+
+        var steps;
+        let xSign = v[0] ? Math.sign(v[0]) : 1;
+        let ySign = v[1] ? Math.sign(v[1]) : 1;
+        
+        if (Math.abs(v[0]) > Math.abs(v[1])) {
+            steps = [38 + xSign, 39 + ySign, 39 - ySign, 38 - xSign]
+        }
+        else {
+            steps = [39 + ySign, 38 + xSign, 38 - xSign, 39 - ySign]
+        }
+
+        for (let step of steps) {
+            s.direction = step;
+            let h = s.nextHead();
+            if (h[0] == a[0] && h[1] == a[1]) {return [step]}
+            s.move();
+            if (!s.isCollision()) {
+                let nextPath =  AI.findPath(s.snake, a);
+                if (nextPath) {
+                    nextPath.unshift(step);
+                    return nextPath;
+                }
+            }
+            s.snake = s.lastSnake //cancels last move, because it was pointless/illegal
+        }
+
+    }
+
+    followPath() {
+        this.game.snake.direction = this.path[0];
+        this.game.loop();
+        this.path.shift();
+    }
+
+    run() {
+        this.running = true;
+        this.path = AI.findPath(this.game.snake.snake, this.game.apple);
+        // if (!this.path) {
+        //     console.assert(false, "A path has not been found");
+        // }
+        let steps = this.path.length;
+        let interval = setInterval( () => {
+            if (steps>0) {
+                this.followPath();
+                steps -=1;
+            }
+        }, 100)
+        setTimeout( ()=>{
+            clearInterval(interval);
+            this.running = false;
+        }, 100 * this.path.length);
+    }
+}
+
+function run() {
+    let ai = new AI();
+    setInterval(() => {
+        if (!ai.running) {ai.run()}
+    }, 50);
+}
+
+// function test() {
+//     let mySnake = [
+//         [4, 13],
+//         [4, 14],
+//         [5, 14],
+//         [5, 15],
+//         [6, 15],
+//         [6, 16],
+//         [7, 16],
+//         [7, 17],
+//         [6, 17],
+//         [5, 17],
+//         [4, 17],
+//         [3, 17],
+//         [3, 18],
+//         [2, 18]
+//     ];
+//     let myApple = [9, 18];
+//     ai = new AI()
+//     ai.game.snake.snake = mySnake;
+//     ai.game.apple = myApple;
+
+//     setInterval(() => {
+//         if (!ai.running) {ai.run()}
+//     }, 50);
+// }
+
+run();
