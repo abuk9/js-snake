@@ -72,33 +72,39 @@ class Game {
     }
 
     getApple() {
-        while (true) {
+        let valid = false;
+        while (!valid) {
             let x = Math.floor(Math.random() * (this.WIDTH-1));
             let y = Math.floor(Math.random() * (this.HEIGHT-1));
-            let apple = [x, y];
-            if (!(apple in this.snake)) {
-                return apple;
+            var apple = [x, y];
+            valid = true;
+            for (let part of this.snake.snake) {
+                if (part[0] == x && part[1] == y) {
+                    valid = false;
+                    break;
+                }
             }
+        }
+        return apple
+    }
+
+    renderParts(objs, fill, width) {  //private method, for render() only
+        for (let obj of objs) {
+            let x = obj[0] * PIX_WIDTH + 1;
+            let y = obj[1] * PIX_WIDTH + 1;
+            this.ctx.fillStyle = fill;
+            this.ctx.fillRect(x, y, width, width);
         }
     }
 
     render() {
-        this.ctx.fillStyle = '#fff';
-        this.ctx.fillRect(0, 0, this.WIDTH*PIX_WIDTH, this.HEIGHT*PIX_WIDTH);
-        
-        this.ctx.fillStyle = '#0c5';
-        this.snake.snake.forEach(part => {
-            let x = (part[0] * PIX_WIDTH) + 1;
-            let y = (part[1] * PIX_WIDTH) + 1;
-            let w = PIX_WIDTH -1;
-            this.ctx.fillRect(x, y, w, w);
-        });
-        
-        this.ctx.fillStyle = '#d22';
-        let x = (this.apple[0] * PIX_WIDTH) + 1;
-        let y = (this.apple[1] * PIX_WIDTH) + 1;
-        let w = PIX_WIDTH -1;
-        this.ctx.fillRect(x, y, w, w);
+        const W = PIX_WIDTH -1;
+        [
+            [ [[0, 0]], "#fff", this.WIDTH * PIX_WIDTH ],
+            [ this.snake.body(), "#0c5", W],
+            [ [this.snake.head()], "#0a3", W],
+            [ [this.apple], "#d22", W ]
+        ].forEach((p) => {this.renderParts( p[0], p[1], p[2])})
     }
 
     loop() {
@@ -203,31 +209,32 @@ function run() {
     }, 50);
 }
 
-// function test() {
-//     let mySnake = [
-//         [4, 13],
-//         [4, 14],
-//         [5, 14],
-//         [5, 15],
-//         [6, 15],
-//         [6, 16],
-//         [7, 16],
-//         [7, 17],
-//         [6, 17],
-//         [5, 17],
-//         [4, 17],
-//         [3, 17],
-//         [3, 18],
-//         [2, 18]
-//     ];
-//     let myApple = [9, 18];
-//     ai = new AI()
-//     ai.game.snake.snake = mySnake;
-//     ai.game.apple = myApple;
+function test() {
+    let mySnake = [
+        [4, 13],
+        [4, 14],
+        [5, 14],
+        [5, 15],
+        [6, 15],
+        [6, 16],
+        [7, 16],
+        [7, 17],
+        [6, 17],
+        [5, 17],
+        [4, 17],
+        [3, 17],
+        [3, 18],
+        [2, 18]
+    ];
+    let myApple = [9, 18];
+    ai = new AI()
+    ai.game.snake.snake = mySnake;
+    ai.game.apple = myApple;
 
-//     setInterval(() => {
-//         if (!ai.running) {ai.run()}
-//     }, 50);
-// }
+    setInterval(() => {
+        if (!ai.running) {ai.game.render()}
+    }, 50);
+}
 
 run();
+// test();
